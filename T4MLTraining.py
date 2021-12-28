@@ -6,34 +6,9 @@ from numpy import array
 import matplotlib.pyplot as pl
 from random import randrange
 from numpy import array
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Flatten
-from tensorflow.keras.layers import TimeDistributed
-from tensorflow.keras.layers import Conv1D
-from tensorflow.keras.layers import MaxPooling1D
-from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import mean_squared_error
 from math import ceil
 import time
-
-# Data load
-def load_data(company, location):
-    # Loading data
-    loc = 'trips.csv'
-    dat = Reader(loc)
-    # Show statistics
-    dat.showStats()
-    # Select only subset of companies and areas to reduce computation load
-    dat.createSubset(company,location)
-    # Number of company-pickups
-    dat.showSubsetStats()
-    # Save into a simplified trip record
-    loc = 'trips_simpler.csv'
-    dat.save(loc)
-
-#load_data(company,location)
 
 # Various functions
 def getSample(inp,pred,outp,samples=1):
@@ -203,49 +178,6 @@ class DataPrep:
     def extract(self):
         return self.inp_train, self.out_train, self.inp_test, self.out_test
 
-class CNNLSTM:
-    def __init__(self, frame_in, frame_out, filters_=128, kernel_size_=5, pool_size_=4, epochs=750):
-        self.model = Sequential()
-        self.model.add(TimeDistributed(Conv1D(filters=filters_, kernel_size=kernel_size_, activation='relu'), input_shape=(None, frame_in, 1)))
-        self.model.add(TimeDistributed(MaxPooling1D(pool_size=pool_size_)))
-        self.model.add(TimeDistributed(Flatten()))
-        self.model.add(LSTM(200, activation='relu'))
-        self.model.add(Dense(frame_out))
-        self.model.compile(optimizer='adam', loss='mse')
-        self.history = History()
-        self.dat_in = None
-        self.dat_out = None
-        self.epochs = epochs
-
-    def setData(self, dat_in, dat_out):
-        self.dat_in = dat_in
-        self.dat_out = dat_out
-       
-    def summary(self):
-        return self.model.summary()
-
-    def extract(self):
-        return self.model      
-
-    def train(self, new_dat_in=None, new_dat_out=None, verbose_=0, epochs_=None):
-        if epochs_ == None:
-            ep = self.epochs
-        else:
-            ep = epochs_
-        if new_dat_in == None or new_dat_out == None:
-            self.model.fit(self.dat_in, self.dat_out, epochs=ep, verbose=verbose_, shuffle=True, callbacks=[self.history])
-        else:
-            self.model.fit(new_dat_in, new_dat_out, epochs=ep, verbose=verbose_, shuffle=True, callbacks=[self.history])
-
-    def drawLoss(self):
-        loss = self.history.history['loss']
-        _, loss_ax = pl.subplots()
-        loss_ax.set_yscale("log")
-        loss_ax.plot(loss)
-
-    def replaceModel(self, model):
-        self.model = model
-        self.model.compile(optimizer='adam', loss='mse')
 
 class Prediction:
     def __init__(self, inp, outp, model, frame_in, frame_out):
