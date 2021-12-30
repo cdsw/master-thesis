@@ -27,11 +27,11 @@ class Model:
     def summarize(self):
         self.model.summary()
 
-    def train(self, new_inp=None, new_oup=None, verbose_=0, epochs_=75):
-        if new_inp == None or new_oup == None:
+    def train(self, verbose_=0, epochs_=75, test=None):
+        if test == None:
             self.history = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True, callbacks=[self.history])
         else:
-            self.history = self.model.fit(new_inp, new_oup, epochs=epochs_, verbose=verbose_, shuffle=True, callbacks=[self.history])
+            self.history = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True, callbacks=[self.history], validation_data=test)
         return self.history
 
     def drawHist(self, factor):
