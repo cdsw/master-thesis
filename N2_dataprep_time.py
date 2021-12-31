@@ -1,5 +1,6 @@
 from N0_prerequisites import *
 from os import walk as oswalk
+from os.path import getsize as gsz
 import pickle as pk
 from numpy import array as arr
 from sklearn.metrics import mean_squared_error
@@ -37,12 +38,14 @@ def prep_time(frame_in, frame_out):
     for subdir, dirs, files in oswalk("./dataset/tser/norm"):
         for filename in files:
             filepath = subdir + '/' + filename
+            if filepath[-1] != 'v':
+                continue
             dat = pd.read_csv(filepath)
             dat = make_set(dat, frame_in, frame_out)
             sets.append(dat)
     return sets
 
-def load_data(dat_loc, frame_in, frame_out, sample_range):
+def load_data(dat_loc, frame_in, frame_out):
     try:
         sets = pk.load(open(dat_loc, "rb"))
     except FileNotFoundError:
@@ -57,15 +60,11 @@ def split(dset_inp, dset_oup, ratio_test, frame_in, frame_out):
     test_oup = arr(dset_oup[:index_test])
     train_oup = arr(dset_oup[index_test:])
     train_inp = np.reshape(arr(dset_inp[index_test:]),(lenh - index_test,1,frame_in,1))
-    print(train_inp.shape, train_oup.shape, test_oup.shape, test_inp.shape)
     return train_inp, train_oup, test_inp, test_oup
 
-def setup(test_ratio):
-    frame_in = 24
-    frame_out = 2
-    sample_range = [500, 2000]
+def setup(test_ratio, frame_in, frame_out):
     dat_loc = "./dataset/tser/norm/dat-{0}-{1}".format(frame_in,frame_out)
-    sets = load_data(dat_loc, frame_in, frame_out, sample_range)
+    sets = load_data(dat_loc, frame_in, frame_out)
     sets_split = []
     for s in sets:
         sets_split.append(split(s[0],s[1],test_ratio, frame_in, frame_out))
@@ -83,7 +82,6 @@ def compound(sets_split):
         test_oup.extend(s[3])
     return arr(train_inp), arr(train_oup), arr(test_inp), arr(test_oup)
 
-
 class Prediction:
     def __init__(self, inp, outp, model, frame_in, frame_out):
         self.inp = inp
@@ -96,16 +94,25 @@ class Prediction:
         self.in_percent = 0
 
     def predict(self):
+        print(len(self.inp), end = ' | ')
+        alr_notified = 0
         for to_test_idx in range(len(self.inp)):
+            percent_done = int((to_test_idx / len(self.inp)) * 100)
+            if percent_done % 10 == 0:
+                if alr_notified == 0:
+                    print('|', end='')
+                    alr_notified = 1
+            else:
+                alr_notified = 0
             x_input = self.inp[to_test_idx]
             x_input = x_input.reshape((1, 1, self.frame_in, 1))
             yhat = self.model.model.predict(x_input, verbose=0).tolist()[0]
             for i in range(len(yhat)):
                 yhat[i] = max(yhat[i],0)
             self.pred.append(yhat)
-        self.rmse = (mean_squared_error(self.pred, self.outp) / self.frame_out) ** 0.5  
+        self.rmse = (mean_squared_error(self.pred, self.outp[:to_test_idx+1]) / self.frame_out) ** 0.5  
 
-    def summary(self, label="", verbose=True):
+    def summary(self, epochs_, label="", verbose=True):
         sum_dat = 0
         len_dat = 0
         for i in self.inp:
@@ -115,11 +122,19 @@ class Prediction:
         average_bin_value = sum_dat/len_dat
         self.in_percent = self.rmse/average_bin_value*10000//1/100
 
+        s = "Label | Total demand | Test cases | Average demand | RMSE"
+        sum_dat_str = '{:.5f}'.format(sum_dat[0])
+        t = label + ' | TD ' + sum_dat_str + " | TC " + str(len_dat) + " | AD " + str(int(average_bin_value * 100)/100) + ' | ' + str(self.in_percent) + "%"
+
+        fn = './temp/benchmark-ep' + str(epochs_) + '-' + str(self.frame_in) + '-' + str(self.frame_out) + '.txt'
+        f = open(fn, 'a+')
+        if gsz(fn)  == 0:
+            f.write(s + '\n')
+        f.write(t + '\n')
+        f.close()
+
         if verbose:
-            #print("RMSE " + label + " = " + str(int(self.rmse * 100)/100), end = ' | ')
-            print("Total demand " + label + " = " + str(sum_dat), end =' || ')
-            print("Average demand " + label + " = " + str(int(average_bin_value * 100)/100), end=' || ')
-            print("RMSE " + label + " = " + str(self.in_percent) + "%", end=' || ')
+            print(t)
 
     def extract(self):
         return self.pred
