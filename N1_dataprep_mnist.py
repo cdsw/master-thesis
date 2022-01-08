@@ -1,6 +1,8 @@
 from N0_prerequisites import *
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
 #There are two datasets for this experiment:
 #1. Fashion-MNIST = Classification task
@@ -11,7 +13,7 @@ img_rows, img_cols = 28, 28
 
 def fetch():
     dset = pd.read_csv("./dataset/archive/fmni.csv")
-    dset.sample(frac=1)
+    dset.sample(frac=1).reset_index(drop=True)
     return dset
 
 def normalize_portions(portions):
@@ -48,3 +50,39 @@ def distribute(dset, portions):
 # SEPARATE THIS FOR ML
 #portions = portion of each node ([1,2,4]): node 1: 1/6, node 2: 2/6, node 3: 4/6
 #test_in, test_out, train_in, train_out = prep_mnist()
+
+class CNN(Model):
+    def __init__(self):
+        super().__init__()
+
+    def setup(self):
+        self.model = Sequential()
+        self.model.add(Conv2D(6, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+        self.model.add(MaxPooling2D((2, 2)))
+        self.model.add(Conv2D(12, (3, 3), activation='relu'))
+        self.model.add(MaxPooling2D((2, 2)))
+        self.model.add(Conv2D(12, (3, 3), activation='relu'))
+        self.model.add(Flatten())
+        self.model.add(Dense(12, activation='relu'))
+        self.model.add(Dense(10))
+        self.model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+
+# Multi-client construction
+def buildPortions(count, dataset):
+    portions = [int(2 ** (x + 1)) for x in range(count)]
+    portions_idx = [int(e / sum(portions) * len(dataset)) for e in portions][::-1]
+    portions = []
+    index = 0
+    for e in portions_idx:
+        portions.append(dataset[index : (index + e)])
+        index += e
+    print(portions_idx)
+    return portions
+
+# Multi-client validation
+def testMulti(test_inps_, test_oups_, model_):
+    lenh = len(test_inps_)
+    for i in range(lenh):
+        if i in [0, lenh // 2, lenh - 1]:
+            print(i, len(test_inps_[i]), len(test_oups_[i]))
+            model_.model.evaluate(test_inps_[i], test_oups_[i])

@@ -83,7 +83,7 @@ def compound(sets_split):
     return arr(train_inp), arr(train_oup), arr(test_inp), arr(test_oup)
 
 class Prediction:
-    def __init__(self, inp, outp, model, frame_in, frame_out):
+    def __init__(self, inp, outp, model, frame_in, frame_out, session_num):
         self.inp = inp
         self.model = model
         self.outp = outp
@@ -92,10 +92,13 @@ class Prediction:
         self.rmse = None
         self.frame_out = frame_out
         self.in_percent = 0
+        self.session_num = session_num
+        self.elapsed_time = None
 
     def predict(self):
         print(len(self.inp), end = ' | ')
         alr_notified = 0
+        start = time()
         for to_test_idx in range(len(self.inp)):
             percent_done = int((to_test_idx / len(self.inp)) * 100)
             if percent_done % 10 == 0:
@@ -111,6 +114,9 @@ class Prediction:
                 yhat[i] = max(yhat[i],0)
             self.pred.append(yhat)
         self.rmse = (mean_squared_error(self.pred, self.outp[:to_test_idx+1]) / self.frame_out) ** 0.5  
+        end = time()
+        self.elapsed_time = end - start
+
 
     def summary(self, epochs_, label="", verbose=True):
         sum_dat = 0
@@ -122,9 +128,9 @@ class Prediction:
         average_bin_value = sum_dat/len_dat
         self.in_percent = self.rmse/average_bin_value*10000//1/100
 
-        s = "Label | Total demand | Test cases | Average demand | RMSE"
+        s = "Session | Label | Total demand | Test cases | Average demand | RMSE | Duration"
         sum_dat_str = '{:.5f}'.format(sum_dat[0])
-        t = label + ' | TD ' + sum_dat_str + " | TC " + str(len_dat) + " | AD " + str(int(average_bin_value * 100)/100) + ' | ' + str(self.in_percent) + "%"
+        t = str(self.session_num) + ' | L ' + label + ' | TD ' + sum_dat_str + " | TC " + str(len_dat) + " | AD " + str(int(average_bin_value * 100)/100) + ' | ' + str(self.in_percent) + "% | Dur " + str(self.elapsed_time)
 
         fn = './temp/benchmark-ep' + str(epochs_) + '-' + str(self.frame_in) + '-' + str(self.frame_out) + '.txt'
         f = open(fn, 'a+')
