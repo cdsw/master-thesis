@@ -12,7 +12,7 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 img_rows, img_cols = 28, 28
 
 def fetch():
-    dset = pd.read_csv("./dataset/archive/fmni.csv")
+    dset = pd.read_csv("./dataset/fmni.csv")
     dset.sample(frac=1).reset_index(drop=True)
     return dset
 
