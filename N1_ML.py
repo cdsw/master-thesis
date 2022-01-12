@@ -86,3 +86,70 @@ def testMulti(test_inps_, test_oups_, model_):
         if i in [0, lenh // 2, lenh - 1]:
             print(i, len(test_inps_[i]), len(test_oups_[i]))
             model_.model.evaluate(test_inps_[i], test_oups_[i])
+
+
+def honestTrainGlobal(epochs, train_inp_, train_oup_):
+    sess = getSession()
+    md = CNN()
+    md.setup()
+    md.setData(train_inp_,train_oup_)
+    md.train('FMN', 'Global-' + sess, epochs_=epochs, verbose_=2)
+    return md
+
+def honestGlobal(test_inp_, test_oup_, model_):
+    model_.model.evaluate(test_inp_, test_oup_)
+
+def clientsEval(test_inps_, test_oups_):
+    testMulti(test_inps_, test_oups_)
+
+def randomize(train_oup__):
+    train_oup_ = deepcopy(train_oup__)
+    for i in range(len(train_oup_)):
+        for j in range(len(train_oup_[i])):
+            deviation = randint(0,300)/100
+            train_oup_[i][j] = train_oup_[i][j] * deviation
+    print(train_oup__ - train_oup_)
+    return train_oup_    
+
+def shuffle(lst):
+    lst_ = []
+    for i in range(len(lst)):
+        candidate = randint(-1,1)
+        if lst[i] == 1 and lst[i] == candidate:
+            candidate = 0
+        lst_.append(candidate)
+    return lst_
+
+def poison(seth, defect_ratio):
+    seth_ = deepcopy(seth)
+    sumh = 0
+    altered = 0
+    for e in seth_:
+        sumh += len(e)
+    for i in range(len(seth_)):
+        ratio = len(seth_[i])/sumh
+        if ratio > defect_ratio:
+            continue
+        else:
+            #train_oups_[i] = randomize(train_oups_[i])
+            for j in range(len(seth_[i])):
+                seth_[i][j] = shuffle(seth_[i][j])
+                altered += 1
+            defect_ratio -= ratio
+    print("Altered: " + str(altered) + " of " + str(sumh))
+    return seth_
+
+def dishonestTrain(epochs, train_inps_, train_oups_):
+    train_inp__ = []
+    train_oup__ = []
+    for i in range(len(train_inps_)):
+        train_inp__.extend(train_inps_[i])
+        train_oup__.extend(train_oups_[i])
+    md = CNN()
+    md.setup()
+    train_oup__ = np.array(train_oup__)
+    train_inp__ = np.array(train_inp__)
+    md.setData(train_inp__,train_oup__)
+    sess = getSession()
+    md.train('FMNDH', 'GlobalDH-' + sess, epochs_=epochs, verbose_=2)
+    return md

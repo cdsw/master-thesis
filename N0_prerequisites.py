@@ -47,6 +47,19 @@ class Model:
         f.write(s + '\n')
         f.close()
 
+    def trainW(self, label, session_num, verbose_=0, epochs_=1, validation_set_=None):
+        start = time()
+        if validation_set_ != None:
+            qual = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True, validation_data=validation_set_)    
+        else:
+            qual = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True)
+        end = time()
+        s = 'Session ' + session_num + ' | Label: ' + label + ' | Epochs: ' + str(epochs_) + ' | Training volume: ' + str(len(self.inp)) + ' | Quantity: ' + str(self.sum_dat) + ' | Duration: ' + str(end-start)
+        f = open("./temp/session-training.txt", 'a+')
+        f.write(s + '\n')
+        f.close()
+        return qual
+
     def drawHist(self, factor):
         hist = self.history.history[factor]
         _, hist_ax = pl.subplots()
@@ -55,7 +68,7 @@ class Model:
 
     def replaceModel(self, model):
         self.model = model
-        self.model.compile(optimizer='adam', loss='mse')
+        self.model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
 
 def getSession():
     f = open("./temp/session_num.txt", 'r')
