@@ -6,6 +6,7 @@ from tensorflow.python.keras.callbacks import History
 from time import time
 from copy import deepcopy
 from random import random as rdm
+from pympler.asizeof import asizeof
 
 NaN = np.nan
 
