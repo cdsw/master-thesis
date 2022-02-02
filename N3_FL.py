@@ -1,10 +1,9 @@
-from pyexpat import model
 from N1_ML import *
 from U1_IPFS import *
 from tensorflow.python.keras.models import clone_model, load_model
 from os import remove as rm
 import pickle
-from math import log as loge
+from math import log
 
 # FUNCTIONS MISC
 
@@ -13,17 +12,12 @@ def combine_models(m1, m2):
     for i in range(len(m1)):
         m[i] += m2[i]
     return m
-
-def saveToFile(content, location):
-    f = open(location, 'w')
-    f.write(content)
-    f.close()
-
-def readFromFile(location):
-    f = open(location, 'r')
-    g = f.read()
-    f.close()
-    return g
+    
+def combine_models_multiple(ms): # ms: list of models
+    init_model = ms[0]
+    for i in range(1, len(ms)):
+        init_model[0] = np.add(init_model[0], init_model[i])
+    return init_model
 
 def multiply_scalar(model, wei):
     for i in range(len(model)):
@@ -34,8 +28,8 @@ def multiply_scalar(model, wei):
 
 class Client:
     def __init__(self, id_):
-        self.id_ = id_
-        self.hash = str(hash(str(self.id_)))
+        self.id_ = str(id_)
+        self.hash = toHash(self.id_)
         self.round = 0 # <- useful for spacing out tests
         self.roundLimit = 1
         self.train_inp = None
@@ -48,6 +42,9 @@ class Client:
         self.model = CNN()
         self.hashes = None
 
+    def convertToClass(self, class_, init=0):
+        self.__class__ = class_
+
     def getVolume(self):
         return len(self.train_inp)
 
@@ -59,7 +56,9 @@ class Client:
         qual_name = 'qual'
         portion_select_low = int(round_ / self.roundLimit * len(self.train_inp))
         portion_select_high = int((round_ + 1) / self.roundLimit * len(self.train_inp))
-        self.model.setData(self.train_inp[portion_select_low:portion_select_high], self.train_oup[portion_select_low:portion_select_high])
+        inp = self.train_inp[portion_select_low:portion_select_high]
+        oup = self.train_oup[portion_select_low:portion_select_high]
+        self.model.setData(inp, oup)
         ts = time()
         self.latest_quality = self.model.trainW(str(self.id_), getSession(), epochs_=epoch_).history['accuracy'][-1]
         te = time()

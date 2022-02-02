@@ -7,6 +7,7 @@ from time import time
 from copy import deepcopy
 from random import random as rdm
 from pympler.asizeof import asizeof
+from hashlib import sha224
 
 NaN = np.nan
 
@@ -79,3 +80,6 @@ def getSession():
     f.write(str(ses + 1))
     f.close()
     return str(ses + 1)
+
+def toHash(value):
+    return str(sha224(str(value).encode('utf-8')).hexdigest())

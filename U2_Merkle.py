@@ -1,9 +1,10 @@
 # adapted from droid76's code
 from pympler.asizeof import asizeof
+from hashlib import sha224
 
 def toHash(value):
-    return str(hash(str(value)))
-
+    return str(sha224(str(value).encode('utf-8')).hexdigest())
+        
 def concat(a, b):
     return a + b
     
