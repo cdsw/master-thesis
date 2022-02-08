@@ -83,7 +83,8 @@ class Client:
         return mod_hash, qual_hash
 
     def evaluate(self):
-        qual =  self.model.model.evaluate(self.test_inp, self.test_oup, verbose=2)      
+        print(self.test_inp.shape, self.test_oup.shape)
+        qual =  self.model.model.evaluate(self.test_inp, self.test_oup, verbose=2)
         return qual
 
     def extractModel(self):
@@ -215,6 +216,13 @@ def shuffle(lst):
     return lst_
 
 def poisonFL(client_):
+    for i in range(len(client_.train_inp)):
+        for j in range(len(client_.train_inp[i])):
+            client_.train_inp[i][j] = shuffle(client_.train_inp[i][j])
+    client_.train_oup = np.array(shuffle(client_.train_oup))
+    return client_
+
+def poisonBFL(client_):
     for i in range(len(client_.train_inp)):
         for j in range(len(client_.train_inp[i])):
             client_.train_inp[i][j] = shuffle(client_.train_inp[i][j])
