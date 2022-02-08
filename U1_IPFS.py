@@ -1,6 +1,7 @@
 import ipfshttpclient as ip
 from os import remove
 from tensorflow.python.keras.models import load_model
+import pickle as pkl
 
 class IPFS:
     def __init__(self, id_):
@@ -41,5 +42,23 @@ def IPFStoObj(ipfs_obj, hash_, location):
 def IPFStoModObj(ipfs_obj, hash_, location):
     ipfs_obj.getFromIPFS(hash_, location)
     obj_ = load_model(location + hash_)
+    remove(location + hash_)
+    return obj_
+
+def objToIPFS(ipfs_obj, obj_, location):
+    saveToFile(obj_, location + 'temp')
+    hash_ = ipfs_obj.sendToIPFS(location + 'temp')
+    remove(location + 'temp')
+    return hash_
+
+def objPickleToIPFS(ipfs_obj, obj_, location):
+    pkl.dump(obj_, open(location + 'temp', 'wb'))
+    hash_ = ipfs_obj.sendToIPFS(location + 'temp')
+    remove(location + 'temp')
+    return hash_
+
+def IPFStoPickleObj(ipfs_obj, hash_, location):
+    ipfs_obj.getFromIPFS(hash_, location)
+    obj_ = pkl.load(open(location + hash_, 'rb'))
     remove(location + hash_)
     return obj_

@@ -12,17 +12,24 @@ def combine_models(m1, m2):
     for i in range(len(m1)):
         m[i] += m2[i]
     return m
-    
-def combine_models_multiple(ms): # ms: list of models
-    init_model = ms[0]
-    for i in range(1, len(ms)):
-        init_model[0] = np.add(init_model[0], init_model[i])
-    return init_model
 
-def multiply_scalar(model, wei):
+def multiply_scalar(model_, wei):
+    model = deepcopy(model_)
     for i in range(len(model)):
         model[i] *= wei
     return model
+
+def combine_ultimate(models, weights):
+    average = None
+    for i in range(len(models)):
+        #print(models[i][0][0][0][0][0], 'weight', weights [i])
+        weighted = multiply_scalar(models[i], weights[i])
+        if average == None:
+            average = weighted
+        else:
+            average = combine_models(average, weighted)
+    #print(average[0][0][0][0][0], 'combine-weights')
+    return average
 
 # CLIENT
 
@@ -76,7 +83,8 @@ class Client:
         return mod_hash, qual_hash
 
     def evaluate(self):
-        self.model.model.evaluate(self.test_inp, self.test_oup, verbose=2)      
+        qual =  self.model.model.evaluate(self.test_inp, self.test_oup, verbose=2)      
+        return qual
 
     def extractModel(self):
         return self.model
@@ -187,13 +195,7 @@ class Server:
             cli_proportion.append(w/total_contribution)
         
         # averaging
-        average = None
-        for i in range(len(cli_weights)):
-            weighted = multiply_scalar(cli_weights[i],cli_proportion[i])
-            if average == None:
-                average = weighted
-            else:
-                average = combine_models(average, weighted)
+        average = combine_ultimate(cli_weights, cli_proportion)
 
         # repacking in global model
         self.model.model.set_weights(average)
@@ -244,7 +246,7 @@ def buildFLPoi(train_inps_, train_oups_, test_inps_, test_oups_, test_inp_, test
         if i in client_poi:
             c = poisonFL(c)
         clients.append(c)
-    server = Server(clients, epochs_, rounds_)
+    server = Server(clients, epochs_, rounds_, './models/')
     server.setTestCase(test_inp_, test_oup_)
     return server
 

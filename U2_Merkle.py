@@ -1,4 +1,5 @@
 # adapted from droid76's code
+from tkinter import E
 from pympler.asizeof import asizeof
 from hashlib import sha224
 
@@ -7,7 +8,8 @@ def toHash(value):
         
 def concat(a, b):
     return a + b
-    
+
+
 class BogusStringTemplate:
     def __init__(self, string_):
         self.string = string_
@@ -17,7 +19,7 @@ class BogusStringTemplate:
             self.string += str(x)
 
 class MerkleTreeNode:
-    def __init__(self,value):
+    def __init__(self, value):
         self.left = None
         self.right = None
         self.value = value
