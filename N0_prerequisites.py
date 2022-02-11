@@ -11,6 +11,9 @@ from hashlib import sha224
 
 NaN = np.nan
 
+def toHash(value):
+    return str(sha224(str(value).encode('utf-8')).hexdigest())
+
 class Node:
     def __init__(self):
         self.id_ = str.format("{:05d}",randint(0,10000))
@@ -52,11 +55,13 @@ class Model:
     def trainW(self, label, session_num, verbose_=0, epochs_=1, validation_set_=None):
         start = time()
         if validation_set_ != None:
-            qual = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True, validation_data=validation_set_)    
+            qual = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True, validation_data=validation_set_)
         else:
             qual = self.model.fit(self.inp, self.oup, epochs=epochs_, verbose=verbose_, shuffle=True)
         end = time()
-        s = 'Session ' + session_num + ' | Label: ' + label + ' | Epochs: ' + str(epochs_) + ' | Training volume: ' + str(len(self.inp)) + ' | Quantity: ' + str(self.sum_dat) + ' | Duration: ' + str(end-start)
+        s = 'Session ' + session_num + ' | Label: ' + toHash(label)[:5] + ' | Epochs: ' + str(epochs_)
+        s += ' | Training volume: ' + str(len(self.inp)) + ' | Quantity: ' + str(self.sum_dat) 
+        s += ' | Duration: ' + str(end-start)
         f = open("./temp/session-training.txt", 'a+')
         f.write(s + '\n')
         f.close()
@@ -81,5 +86,3 @@ def getSession():
     f.close()
     return str(ses + 1)
 
-def toHash(value):
-    return str(sha224(str(value).encode('utf-8')).hexdigest())

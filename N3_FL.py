@@ -67,7 +67,8 @@ class Client:
         oup = self.train_oup[portion_select_low:portion_select_high]
         self.model.setData(inp, oup)
         ts = time()
-        self.latest_quality = self.model.trainW(str(self.id_), getSession(), epochs_=epoch_).history['accuracy'][-1]
+        self.latest_quality = self.model.trainW(str(self.id_), getSession(), epochs_=epoch_, \
+                              validation_set_=(self.test_inp, self.test_oup)).history['accuracy'][-1]
         te = time()
         print("Cli# {0}: {1:.2f} sec, Q: {2:.4f}".format(self.id_, te - ts, self.latest_quality), end = '; ')
         # save model to file
@@ -222,13 +223,29 @@ def poisonFL(client_):
     client_.train_oup = np.array(shuffle(client_.train_oup))
     return client_
 
-def poisonBFL(client_):
-    for i in range(len(client_.train_inp)):
-        for j in range(len(client_.train_inp[i])):
-            client_.train_inp[i][j] = shuffle(client_.train_inp[i][j])
-    client_.train_oup = np.array(shuffle(client_.train_oup))
-    return client_
+def poisonBFLin(dset):
+    dataset = deepcopy(dset)
+    for i in range(len(dataset)):
+        for j in range(len(dataset[i])):
+            dataset[i][j] = shuffle(dataset[i][j])
+    return dataset
 
+def shuffleB(lst):
+    lst_ = []
+    for i in range(len(lst)):
+        candidate = randint(-1,1)
+        if lst[i] == 1 and lst[i] == candidate:
+            candidate = 0
+        lst_.append(candidate)
+    return lst_
+
+def poisonBFLout(dset):
+    dataset = deepcopy(dset)
+    for i in range(len(dataset)):
+        dataset[i] = shuffleB(dataset[i])
+    poisd = np.array(dataset)
+    return poisd
+    
 # FL FUNCTIONS
 
 def buildFL(train_inps_, train_oups_, test_inps_, test_oups_, test_inp_, test_oup_, epochs_, rounds_, model_dir):
